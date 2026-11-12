@@ -1,0 +1,8 @@
+name = "cs2-competitive-profile-api"
+main = "api/src/index.js"
+compatibility_date = "2025-10-14"
+
+# Secrets are set outside version control:
+# wrangler secret put STEAM_API_KEY
+# wrangler secret put FACEIT_API_KEY
+# Optional: wrangler secret put FACEIT_GAME_ID (default: cs2)

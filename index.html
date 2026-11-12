@@ -1,65 +1,123 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CS2 Stats</title>
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
-<header>
-  <h1>🎮 CS2 Stats</h1>
-  <p id="updated" class="updated"></p>
-</header>
-<main>
-  <section class="playtime-card">
-    <h2>Время в игре</h2>
-    <div class="big" id="hours">—</div>
-    <div class="sub" id="minutes"></div>
-  </section>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Поиск публичной статистики CS2 и FACEIT-профилей." />
+    <meta name="theme-color" content="#070b13" />
+    <title>CS2 Scope — статистика игрока</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="page-glow" aria-hidden="true"></div>
+    <header class="site-header wrap">
+      <a class="brand" href="/" aria-label="CS2 Scope — на главную">
+        <span class="brand-mark" aria-hidden="true">CS</span>
+        <span>CS2 <b>Scope</b></span>
+      </a>
+      <span class="header-status"><i></i> публичные данные</span>
+    </header>
 
-  <section>
-    <h2 class="section-title">🎒 Инвентарь <span id="inv-count" class="count"></span></h2>
-    <div id="inventory" class="grid"></div>
-  </section>
-</main>
-<script>
-(async () => {
-  try {
-    const res = await fetch('data.json?t=' + Date.now());
-    const data = await res.json();
+    <main class="wrap">
+      <section class="hero" aria-labelledby="hero-title">
+        <p class="eyebrow">CS2 COMPETITIVE INTELLIGENCE</p>
+        <h1 id="hero-title">Профиль игрока.<br /><em>Без догадок.</em></h1>
+        <p class="hero-copy">Находим публичный Steam- или FACEIT-профиль и собираем понятную сводку: матчи, K/D, win rate, уровень FACEIT, время в CS2 и инвентарь.</p>
 
-    document.getElementById('hours').textContent = data.playtime_hours + ' ч';
-    document.getElementById('minutes').textContent = data.playtime_minutes + ' минут';
-    document.getElementById('updated').textContent =
-      'Обновлено: ' + new Date(data.last_updated).toLocaleString('ru-RU');
+        <form class="search-panel" id="search-form" novalidate>
+          <label class="sr-only" for="player-query">Steam ID, ссылка на профиль или никнейм FACEIT</label>
+          <div class="search-field">
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <input id="player-query" name="query" type="text" autocomplete="off" maxlength="300" placeholder="Steam ID, ссылка на Steam / FACEIT или никнейм" required />
+          </div>
+          <button id="search-button" type="submit"><span>Найти игрока</span><b aria-hidden="true">→</b></button>
+          <label class="inventory-toggle" for="inventory-toggle">
+            <input id="inventory-toggle" type="checkbox" checked />
+            <span class="toggle-ui" aria-hidden="true"></span>
+            <span>Показать инвентарь</span>
+          </label>
+        </form>
+        <p class="search-hint">Например: <button class="text-button" type="button" data-example="76561198000000000">Steam ID64</button> · <span>steamcommunity.com/id/...</span> · <span>faceit.com/en/players/...</span></p>
+        <div id="form-feedback" class="form-feedback" role="status" aria-live="polite"></div>
+      </section>
 
-    const grid = document.getElementById('inventory');
-    document.getElementById('inv-count').textContent = `(${data.inventory_count})`;
+      <section id="results" class="results hidden" aria-live="polite">
+        <div id="notices" class="notices"></div>
+        <article class="profile-card">
+          <div class="profile-identity">
+            <img id="profile-avatar" class="avatar" alt="" hidden />
+            <div id="avatar-fallback" class="avatar avatar-fallback" aria-hidden="true">?</div>
+            <div>
+              <p class="eyebrow">ПРОФИЛЬ ИГРОКА</p>
+              <h2 id="profile-name">—</h2>
+              <div class="profile-meta">
+                <span id="profile-country" hidden></span>
+                <a id="steam-link" class="external-link" target="_blank" rel="noreferrer" hidden>Открыть Steam ↗</a>
+                <span id="profile-visibility" class="source-tag">—</span>
+              </div>
+            </div>
+          </div>
+          <div class="updated-at">Данные запрошены <time id="updated-at">только что</time></div>
+        </article>
 
-    if (!data.inventory.length) {
-      grid.innerHTML = '<p class="empty">Инвентарь пуст или скрыт.</p>';
-      return;
-    }
+        <section aria-labelledby="overview-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">ОБЗОР</p>
+              <h2 id="overview-title">Статистика <span class="source-tag faceit-tag">FACEIT</span></h2>
+            </div>
+            <p class="section-note" id="faceit-level-note">Показатели доступны для связанных FACEIT-профилей.</p>
+          </div>
+          <div class="metric-grid" id="metric-grid">
+            <article class="metric-card"><span class="metric-label">Сыграно матчей</span><strong id="metric-matches">—</strong><small>FACEIT lifetime</small></article>
+            <article class="metric-card"><span class="metric-label">Win rate</span><strong id="metric-winrate">—</strong><small id="metric-wins">победы / матчи</small></article>
+            <article class="metric-card"><span class="metric-label">K/D</span><strong id="metric-kd">—</strong><small id="metric-kills">убийства / смерти</small></article>
+            <article class="metric-card"><span class="metric-label">Уровень</span><strong id="metric-level">—</strong><small id="metric-elo">FACEIT Elo</small></article>
+            <article class="metric-card steam-card"><span class="metric-label">Время в CS2</span><strong id="metric-playtime">—</strong><small>Steam lifetime</small></article>
+          </div>
+        </section>
 
-    const frag = document.createDocumentFragment();
-    for (const item of data.inventory) {
-      const card = document.createElement('div');
-      card.className = 'item';
-      card.innerHTML = `
-        ${item.icon ? `<img src="${item.icon}" alt="" loading="lazy">` : '<div class="no-img"></div>'}
-        <div class="name" title="${item.name}">${item.name}</div>
-        <div class="type">${item.type || ''}</div>
-      `;
-      frag.appendChild(card);
-    }
-    grid.appendChild(frag);
-  } catch (e) {
-    console.error(e);
-    document.getElementById('inventory').innerHTML =
-      '<p class="empty">Не удалось загрузить данные.</p>';
-  }
-})();
-</script>
-</body>
+        <section class="content-section" aria-labelledby="matches-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">ПОСЛЕДНИЕ ИГРЫ</p>
+              <h2 id="matches-title">История матчей <span class="source-tag faceit-tag">FACEIT</span></h2>
+            </div>
+            <p class="section-note">Только официальные матчи, которые возвращает FACEIT Data API.</p>
+          </div>
+          <div class="matches-table-wrap">
+            <table class="matches-table">
+              <thead><tr><th>Карта</th><th>Результат</th><th>Счёт</th><th>K / D / A</th><th>K/D</th><th>Дата</th></tr></thead>
+              <tbody id="matches-body"></tbody>
+            </table>
+            <p id="matches-empty" class="empty-state" hidden>Нет доступной истории матчей FACEIT.</p>
+          </div>
+        </section>
+
+        <section id="inventory-section" class="content-section" aria-labelledby="inventory-title" hidden>
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">STEAM COMMUNITY</p>
+              <h2 id="inventory-title">Инвентарь <span id="inventory-count" class="count"></span></h2>
+            </div>
+            <p class="section-note">Показаны первые 100 предметов публичного инвентаря.</p>
+          </div>
+          <div id="inventory-grid" class="inventory-grid"></div>
+          <p id="inventory-empty" class="empty-state" hidden>Публичный инвентарь не найден.</p>
+        </section>
+
+        <aside class="data-note">
+          <span aria-hidden="true">ⓘ</span>
+          <p id="data-note">Источник матчей, K/D, win rate и уровня — FACEIT. Valve не публикует историю матчей Premier для произвольных профилей.</p>
+        </aside>
+      </section>
+    </main>
+
+    <footer class="site-footer wrap"><span>CS2 Scope</span><span>Данные отображаются только для публичных профилей.</span></footer>
+    <script src="config.js"></script>
+    <script type="module" src="app.js"></script>
+  </body>
 </html>
