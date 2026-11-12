@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS2 Stats</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>🎮 CS2 Stats</h1>
+  <p id="updated" class="updated"></p>
+</header>
+<main>
+  <section class="playtime-card">
+    <h2>Время в игре</h2>
+    <div class="big" id="hours">—</div>
+    <div class="sub" id="minutes"></div>
+  </section>
+
+  <section>
+    <h2 class="section-title">🎒 Инвентарь <span id="inv-count" class="count"></span></h2>
+    <div id="inventory" class="grid"></div>
+  </section>
+</main>
+<script>
+(async () => {
+  try {
+    const res = await fetch('data.json?t=' + Date.now());
+    const data = await res.json();
+
+    document.getElementById('hours').textContent = data.playtime_hours + ' ч';
+    document.getElementById('minutes').textContent = data.playtime_minutes + ' минут';
+    document.getElementById('updated').textContent =
+      'Обновлено: ' + new Date(data.last_updated).toLocaleString('ru-RU');
+
+    const grid = document.getElementById('inventory');
+    document.getElementById('inv-count').textContent = `(${data.inventory_count})`;
+
+    if (!data.inventory.length) {
+      grid.innerHTML = '<p class="empty">Инвентарь пуст или скрыт.</p>';
+      return;
+    }
+
+    const frag = document.createDocumentFragment();
+    for (const item of data.inventory) {
+      const card = document.createElement('div');
+      card.className = 'item';
+      card.innerHTML = `
+        ${item.icon ? `<img src="${item.icon}" alt="" loading="lazy">` : '<div class="no-img"></div>'}
+        <div class="name" title="${item.name}">${item.name}</div>
+        <div class="type">${item.type || ''}</div>
+      `;
+      frag.appendChild(card);
+    }
+    grid.appendChild(frag);
+  } catch (e) {
+    console.error(e);
+    document.getElementById('inventory').innerHTML =
+      '<p class="empty">Не удалось загрузить данные.</p>';
+  }
+})();
+</script>
+</body>
+</html>
